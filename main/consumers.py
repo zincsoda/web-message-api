@@ -1,31 +1,52 @@
 import asyncio
 import json
-from channels.consumer import AsyncConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 from random import randint
 from time import sleep
 
-class PracticeConsumer(AsyncConsumer):
+class PracticeConsumer(AsyncWebsocketConsumer):
 
-    async def websocket_connect(self, event):
-        print("Connected", event)
+    async def connect(self):
+        print("Connected")
 
-        await self.send({"type": "websocket.accept"})
-        await self.send({"type": "websocket.send", "text":"Hello from Sockets"})
+        self.socket_name = "socket_name"
+        self.socket_group_name = "socket_group_name"
 
-    async def websocket_receive(self, event):
-        print("Received", event)
+        # Join room group
+        await self.channel_layer.group_add(
+            self.socket_name,
+            self.socket_group_name
+        )
 
-        sleep(1)
+        await self.accept()
+        await self.send(text_data={"text":"Hello from Sockets"})
+    
+    async def disconnect(self, close_code):
+        # Leave room group
+        await self.channel_layer.group_discard(
+            self.socket_group_name,
+            self.channel_name
+        )
 
-        await self.send({"type": "websocket.send","text":str(randint(0,100))})
+    # Receive message from WebSocket
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+
+        # Send message to room group
+        await self.channel_layer.group_send(
+            self.socket_group_name,
+            {
+                'type': 'message',
+                'text': message
+            }
+        )
 
     # Receive message from room group
-    async def send_message(self, event):
-        print("debug 1")
+    async def chat_message(self, event):
         message = event['message']
-        print("Sending message ", message)
-        # Send message to WebSocket
-        await self.send({"type": "websocket.send", "text":message})
 
-    async def websocket_disconnect(self, event):
-        print("disconnected", event)
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'message': message
+        }))

@@ -7,7 +7,7 @@ from django.template import loader
 from main.consumers import PracticeConsumer
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
+import subprocess
 
 # from rest_framework import permissions
 
@@ -15,15 +15,26 @@ def test(request):
     print("testing ...")
     return HttpResponse("Hello")
 
-async def index(request):
-    print("debug 2")
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-            f"{request.user.id}-message", {"type": "send_message",
-                                           "text": "socket_message"}
-        )
+def power_on(request):
+    subprocess.call('ls')
+    # subprocess.call('vcgencmd display_power 1')
+    return HttpResponse("Power on")
 
-    return render(request, 'main/index.html')
+def power_off(request):
+    subprocess.call('ls')
+    # subprocess.call('vcgencmd display_power 0')
+    return HttpResponse("Power off")
+
+
+# async def index(request):
+#     print("debug 2")
+#     channel_layer = get_channel_layer()
+#     async_to_sync(channel_layer.group_send)(
+#             f"{request.user.id}-message", {"type": "send_message",
+#                                            "text": "socket_message"}
+#         )
+
+#     return render(request, 'main/index.html')
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
