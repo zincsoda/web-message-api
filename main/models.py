@@ -1,7 +1,8 @@
 from django.db import models
 import uuid
 from main.utils import get_gravatar_url
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 class Message(models.Model):
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -14,8 +15,9 @@ class Message(models.Model):
     def __unicode__(self):
         return self.message
 
-    # def save(self, *args, **kwargs):
-    #     if not self.users_avatar_url:
-    #         gravatar_url = "https://www.wiredwizards.org/wp-content/uploads/2016/03/generic_avatar.jpg" #get_gravatar_url(self.users_email)
-    #         self.users_avatar_url = gravatar_url
-    #         super(Message, self).save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        channel_layer = get_channel_layer()
+        channel_group_name = "channel_group_name"
+        async_to_sync(channel_layer.group_send)(channel_group_name, {'type': 'notify', 'content':self.message})
+
+        super(Message, self).save(*args, **kwargs)

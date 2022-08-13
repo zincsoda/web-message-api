@@ -3,28 +3,29 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from random import randint
 from time import sleep
+from channels.layers import get_channel_layer
 
 class PracticeConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        print("Connected")
 
-        self.socket_name = "socket_name"
-        self.socket_group_name = "socket_group_name"
+        self.channel_group_name = "channel_group_name"
 
+        print("Connected to ", self.channel_name)
         # Join room group
         await self.channel_layer.group_add(
-            self.socket_name,
-            self.socket_group_name
+            self.channel_group_name,
+            self.channel_name
         )
 
         await self.accept()
-        await self.send(text_data={"text":"Hello from Sockets"})
+        await self.send(text_data="Hello sockets!")
+        
     
     async def disconnect(self, close_code):
         # Leave room group
         await self.channel_layer.group_discard(
-            self.socket_group_name,
+            self.channel_group_name,
             self.channel_name
         )
 
@@ -35,18 +36,25 @@ class PracticeConsumer(AsyncWebsocketConsumer):
 
         # Send message to room group
         await self.channel_layer.group_send(
-            self.socket_group_name,
+            self.channel_group_name,
             {
                 'type': 'message',
                 'text': message
             }
         )
 
-    # Receive message from room group
-    async def chat_message(self, event):
-        message = event['message']
+    async def notify(self, event):
+        """
+        This handles calls elsewhere in this codebase that look
+        like:
 
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'message': message
-        }))
+            channel_layer.group_send(group_name, {
+                'type': 'notify',  # This routes it to this handler.
+                'content': json_message,
+            })
+
+        Don't try to directly use send_json or anything; this
+        decoupling will help you as things grow.
+        """
+        print("notify")
+        await self.send(event["content"])

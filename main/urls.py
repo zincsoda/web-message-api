@@ -14,6 +14,7 @@ urlpatterns = [
     path('', views.test),
     path('power_on', views.power_on),
     path('power_off', views.power_off),
+    path('message/<str:message_string>/', views.message, name='message'),
     # url(r'^(?P<uuid>[^/]+)/$', views.render_message),
     # path('^api/messages', views.MessageList.as_view(), name='message-list'),
     # path('^api/messages/(?P<pk>[0-9]+)', views.MessageDetail.as_view(), name='message-detail'),    
